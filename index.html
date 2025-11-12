@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toastmaster Role Scheduler</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Lucide React icons as inline SVG components
+        const Calendar = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+        );
+
+        const Users = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+        );
+
+        const Plus = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        );
+
+        const X = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        );
+
+        const FileText = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+        );
+
+        const Edit2 = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+            </svg>
+        );
+
+        const Lock = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        );
+
+        const LogOut = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+        );
+
+        const ROLES = [
+            'Toastmaster',
+            'Speaker 1',
+            'Speaker 2',
+            'Speaker 3',
+            'Topicsmaster',
+            'Gen Evaluator',
+            'Evaluator 1',
+            'Evaluator 2',
+            'Evaluator 3',
+            'Timer',
+            'Educator/JM',
+            'Grammarian'
+        ];
+
+        const ADMIN_PIN = '1234'; // Change this to your preferred PIN
+
+        // Simple localStorage wrapper to mimic window.storage API
+        const storage = {
+            async get(key) {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value ? { key, value, shared: false } : null;
+                } catch (error) {
+                    console.error('Storage get error:', error);
+                    return null;
+                }
+            },
+            async set(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    return { key, value, shared: false };
+                } catch (error) {
+                    console.error('Storage set error:', error);
+                    return null;
+                }
+            }
+        };
+
+        function ToastmasterScheduler() {
+            const [members, setMembers] = useState([]);
+            const [meetings, setMeetings] = useState([]);
+            const [newMemberName, setNewMemberName] = useState('');
+            const [editingMember, setEditingMember] = useState(null);
+            const [activeTab, setActiveTab] = useState('schedule');
+            const [loading, setLoading] = useState(true);
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [pinInput, setPinInput] = useState('');
+            const [selectedMember, setSelectedMember] = useState(null);
+            const [showLogin, setShowLogin] = useState(true);
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            const loadData = async () => {
+                try {
+                    const membersResult = await storage.get('tm-members');
+                    const meetingsResult = await storage.get('tm-meetings');
+                    
+                    if (membersResult) {
+                        setMembers(JSON.parse(membersResult.value));
+                    }
+                    if (meetingsResult) {
+                        setMeetings(JSON.parse(meetingsResult.value));
+                    }
+                } catch (error) {
+                    console.log('No existing data found, starting fresh');
+                }
+                setLoading(false);
+            };
+
+            const saveData = async () => {
+                try {
+                    await storage.set('tm-members', JSON.stringify(members));
+                    await storage.set('tm-meetings', JSON.stringify(meetings));
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                    alert('Error saving data. Please try again.');
+                }
+            };
+
+            useEffect(() => {
+                if (!loading) {
+                    saveData();
+                }
+            }, [members, meetings]);
+
+            const handleLogin = (asAdmin) => {
+                if (asAdmin) {
+                    if (pinInput === ADMIN_PIN) {
+                        setIsAdmin(true);
+                        setShowLogin(false);
+                        setPinInput('');
+                        setActiveTab('schedule');
+                    } else {
+                        alert('Incorrect PIN');
+                        setPinInput('');
+                    }
+                } else {
+                    setIsAdmin(false);
+                    setShowLogin(false);
+                    setActiveTab('schedule');
+                }
+            };
+
+            const handleLogout = () => {
+                setIsAdmin(false);
+                setSelectedMember(null);
+                setShowLogin(true);
+                setPinInput('');
+            };
+
+            const addMember = () => {
+                if (newMemberName.trim()) {
+                    setMembers([...members, { id: Date.now(), name: newMemberName.trim() }]);
+                    setNewMemberName('');
+                }
+            };
+
+            const removeMember = (id) => {
+                setMembers(members.filter(m => m.id !== id));
+            };
+
+            const updateMemberName = (id, newName) => {
+                setMembers(members.map(m => m.id === id ? { ...m, name: newName } : m));
+                setEditingMember(null);
+            };
+
+            const addMeeting = () => {
+                const today = new Date();
+                const newDate = new Date(today);
+                if (meetings.length > 0) {
+                    const lastDate = new Date(meetings[meetings.length - 1].date);
+                    newDate.setTime(lastDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+                }
+                
+                const dateStr = newDate.toISOString().split('T')[0];
+                const newMeeting = {
+                    id: Date.now(),
+                    date: dateStr,
+                    assignments: {}
+                };
+                setMeetings([...meetings, newMeeting]);
+            };
+
+            const removeMeeting = (id) => {
+                setMeetings(meetings.filter(m => m.id !== id));
+            };
+
+            const assignRole = (meetingId, role, memberId) => {
+                setMeetings(meetings.map(meeting => {
+                    if (meeting.id === meetingId) {
+                        const newAssignments = { ...meeting.assignments };
+                        
+                        const existingRole = Object.keys(newAssignments).find(
+                            r => newAssignments[r] === memberId
+                        );
+                        if (existingRole && existingRole !== role) {
+                            alert('This member already has a role in this meeting!');
+                            return meeting;
+                        }
+                        
+                        if (newAssignments[role] === memberId) {
+                            delete newAssignments[role];
+                        } else {
+                            newAssignments[role] = memberId;
+                        }
+                        return { ...meeting, assignments: newAssignments };
+                    }
+                    return meeting;
+                }));
+            };
+
+            const claimRole = (meetingId, role) => {
+                if (!selectedMember) {
+                    alert('Please select your name first');
+                    return;
+                }
+
+                setMeetings(meetings.map(meeting => {
+                    if (meeting.id === meetingId) {
+                        const newAssignments = { ...meeting.assignments };
+                        
+                        if (newAssignments[role] && newAssignments[role] !== selectedMember) {
+                            alert('This role is already taken!');
+                            return meeting;
+                        }
+
+                        const existingRole = Object.keys(newAssignments).find(
+                            r => newAssignments[r] === selectedMember
+                        );
+                        if (existingRole && existingRole !== role) {
+                            alert('You already have a role in this meeting!');
+                            return meeting;
+                        }
+                        
+                        if (newAssignments[role] === selectedMember) {
+                            delete newAssignments[role];
+                        } else {
+                            newAssignments[role] = selectedMember;
+                        }
+                        return { ...meeting, assignments: newAssignments };
+                    }
+                    return meeting;
+                }));
+            };
+
+            const getMemberRoleHistory = (memberId) => {
+                const history = {};
+                meetings.forEach(meeting => {
+                    Object.entries(meeting.assignments).forEach(([role, assignedId]) => {
+                        if (assignedId === memberId) {
+                            history[role] = (history[role] || 0) + 1;
+                        }
+                    });
+                });
+                return history;
+            };
+
+            const updateMeetingDate = (meetingId, newDate) => {
+                setMeetings(meetings.map(m => 
+                    m.id === meetingId ? { ...m, date: newDate } : m
+                ));
+            };
+
+            const getMemberById = (id) => members.find(m => m.id === id);
+
+            const exportBulletin = () => {
+                try {
+                    let bulletin = 'TOASTMASTERS MEETING SCHEDULE\n';
+                    bulletin += '='.repeat(50) + '\n\n';
+                    
+                    meetings.slice(0, 4).forEach((meeting, idx) => {
+                        bulletin += `${idx === 0 ? 'NEXT' : 'UPCOMING'} MEETING: ${new Date(meeting.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+                        bulletin += '-'.repeat(50) + '\n';
+                        
+                        ROLES.forEach(role => {
+                            const memberId = meeting.assignments[role];
+                            const memberName = memberId ? getMemberById(memberId)?.name : 'OPEN';
+                            bulletin += `${role.padEnd(20)} ${memberName}\n`;
+                        });
+                        bulletin += '\n';
+                    });
+                    
+                    const blob = new Blob([bulletin], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'toastmaster-bulletin.txt';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    alert('Bulletin exported successfully!');
+                } catch (error) {
+                    console.error('Export error:', error);
+                    alert('Error exporting bulletin. Please try again.');
+                }
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                        <div className="text-xl text-gray-600">Loading...</div>
+                    </div>
+                );
+            }
+
+            if (showLogin) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+                        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <Calendar className="w-16 h-16 mx-auto mb-4 text-blue-600" />
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">Toastmaster Scheduler</h1>
+                                <p className="text-gray-600">Welcome! How would you like to access the scheduler?</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="border rounded-lg p-6 hover:border-blue-500 transition-colors">
+                                    <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-blue-600" />
+                                        Member Access
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mb-4">Sign up for available roles</p>
+                                    <button
+                                        onClick={() => handleLogin(false)}
+                                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        Continue as Member
+                                    </button>
+                                </div>
+
+                                <div className="border rounded-lg p-6 hover:border-indigo-500 transition-colors">
+                                    <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+                                        <Lock className="w-5 h-5 text-indigo-600" />
+                                        Admin Access
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mb-4">Manage members and assign roles</p>
+                                    <input
+                                        type="password"
+                                        value={pinInput}
+                                        onChange={(e) => setPinInput(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleLogin(true)}
+                                        placeholder="Enter admin PIN"
+                                        className="w-full px-4 py-2 border rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    />
+                                    <button
+                                        onClick={() => handleLogin(true)}
+                                        className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                    >
+                                        Login as Admin
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 text-center text-sm text-gray-500">
+                                <p>Default Admin PIN: 1234 (change in code)</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                            <div className={`${isAdmin ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600'} p-6 text-white`}>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h1 className="text-3xl font-bold flex items-center gap-3">
+                                            <Calendar className="w-8 h-8" />
+                                            Toastmaster Role Scheduler
+                                        </h1>
+                                        <p className="mt-2 text-blue-100">
+                                            {isAdmin ? 'Admin Mode - Full Access' : 'Member Mode - Sign up for roles'}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+
+                            {!isAdmin && (
+                                <div className="bg-yellow-50 border-b border-yellow-200 p-4">
+                                    <div className="flex items-center gap-3">
+                                        <label className="font-medium text-gray-700">Select your name:</label>
+                                        <select
+                                            value={selectedMember || ''}
+                                            onChange={(e) => setSelectedMember(e.target.value ? parseInt(e.target.value) : null)}
+                                            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        >
+                                            <option value="">-- Choose your name --</option>
+                                            {members.map(member => (
+                                                <option key={member.id} value={member.id}>
+                                                    {member.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex border-b">
+                                <button
+                                    onClick={() => setActiveTab('schedule')}
+                                    className={`px-6 py-3 font-medium transition-colors ${
+                                        activeTab === 'schedule'
+                                            ? 'border-b-2 border-blue-600 text-blue-600'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    Schedule
+                                </button>
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => setActiveTab('members')}
+                                        className={`px-6 py-3 font-medium transition-colors ${
+                                            activeTab === 'members'
+                                                ? 'border-b-2 border-blue-600 text-blue-600'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                    >
+                                        Members ({members.length})
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setActiveTab('history')}
+                                    className={`px-6 py-3 font-medium transition-colors ${
+                                        activeTab === 'history'
+                                            ? 'border-b-2 border-blue-600 text-blue-600'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    Role History
+                                </button>
+                            </div>
+
+                            <div className="p-6">
+                                {activeTab === 'schedule' && (
+                                    <div>
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h2 className="text-2xl font-bold text-gray-800">Meeting Schedule</h2>
+                                            <div className="flex gap-3">
+                                                {isAdmin && (
+                                                    <>
+                                                        <button
+                                                            onClick={exportBulletin}
+                                                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                                            disabled={meetings.length === 0}
+                                                        >
+                                                            <FileText className="w-4 h-4" />
+                                                            Export Bulletin
+                                                        </button>
+                                                        <button
+                                                            onClick={addMeeting}
+                                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                                        >
+                                                            <Plus className="w-4 h-4" />
+                                                            Add Meeting
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {meetings.length === 0 ? (
+                                            <div className="text-center py-12 text-gray-500">
+                                                <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                                                <p>No meetings scheduled yet.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-6">
+                                                {meetings.slice(0, 4).map((meeting, idx) => (
+                                                    <div key={meeting.id} className="border rounded-lg overflow-hidden">
+                                                        <div className="bg-gray-50 p-4 flex justify-between items-center">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                                                    idx === 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'
+                                                                }`}>
+                                                                    {idx === 0 ? 'Next Meeting' : `Week ${idx + 1}`}
+                                                                </span>
+                                                                {isAdmin ? (
+                                                                    <input
+                                                                        type="date"
+                                                                        value={meeting.date}
+                                                                        onChange={(e) => updateMeetingDate(meeting.id, e.target.value)}
+                                                                        className="px-3 py-1 border rounded"
+                                                                    />
+                                                                ) : (
+                                                                    <span className="font-medium">
+                                                                        {new Date(meeting.date).toLocaleDateString('en-US', { 
+                                                                            weekday: 'long', 
+                                                                            year: 'numeric', 
+                                                                            month: 'long', 
+                                                                            day: 'numeric' 
+                                                                        })}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'members' && isAdmin && (
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Club Members</h2>
+                                        
+                                        <div className="mb-6 flex gap-3">
+                                            <input
+                                                type="text"
+                                                value={newMemberName}
+                                                onChange={(e) => setNewMemberName(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && addMember()}
+                                                placeholder="Enter member name"
+                                                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                            <button
+                                                onClick={addMember}
+                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                Add Member
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {members.map(member => (
+                                                <div key={member.id} className="border rounded-lg p-4 flex justify-between items-center hover:shadow-md transition-shadow">
+                                                    {editingMember === member.id ? (
+                                                        <input
+                                                            type="text"
+                                                            defaultValue={member.name}
+                                                            onBlur={(e) => updateMemberName(member.id, e.target.value)}
+                                                            onKeyPress={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    updateMemberName(member.id, e.target.value);
+                                                                }
+                                                            }}
+                                                            autoFocus
+                                                            className="flex-1 px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                        />
+                                                    ) : (
+                                                        <span className="font-medium text-gray-800">{member.name}</span>
+                                                    )}
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => setEditingMember(member.id)}
+                                                            className="text-blue-600 hover:text-blue-800 p-1"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => removeMember(member.id)}
+                                                            className="text-red-600 hover:text-red-800 p-1"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {members.length === 0 && (
+                                            <div className="text-center py-12 text-gray-500">
+                                                <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                                                <p>No members added yet. Add your first member above.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'history' && (
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Role History</h2>
+                                        
+                                        {members.length === 0 ? (
+                                            <div className="text-center py-12 text-gray-500">
+                                                <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                                                <p>No members to show history for.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {members.map(member => {
+                                                    const history = getMemberRoleHistory(member.id);
+                                                    const totalRoles = Object.values(history).reduce((a, b) => a + b, 0);
+                                                    
+                                                    return (
+                                                        <div key={member.id} className="border rounded-lg p-4">
+                                                            <div className="flex justify-between items-center mb-3">
+                                                                <h3 className="text-lg font-semibold text-gray-800">{member.name}</h3>
+                                                                <span className="text-sm text-gray-600">Total roles: {totalRoles}</span>
+                                                            </div>
+                                                            {totalRoles > 0 ? (
+                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                                                    {Object.entries(history).map(([role, count]) => (
+                                                                        <div key={role} className="bg-gray-50 p-2 rounded text-sm">
+                                                                            <div className="text-gray-600">{role}</div>
+                                                                            <div className="font-semibold text-blue-600">{count}x</div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-gray-500 text-sm">No roles assigned yet</div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ToastmasterScheduler />);
+    </script>
+</body>
+</html>                                            {isAdmin && (
+                                                                <button
+                                                                    onClick={() => removeMeeting(meeting.id)}
+                                                                    className="text-red-600 hover:text-red-800 p-2"
+                                                                >
+                                                                    <X className="w-5 h-5" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className="p-4">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                {ROLES.map(role => {
+                                                                    const assignedId = meeting.assignments[role];
+                                                                    const assignedMember = assignedId ? getMemberById(assignedId) : null;
+                                                                    const isMyRole = assignedId === selectedMember;
+                                                                    
+                                                                    return (
+                                                                        <div key={role} className={`border rounded p-3 ${isMyRole ? 'bg-green-50 border-green-300' : ''}`}>
+                                                                            <div className="font-medium text-gray-700 mb-2">{role}</div>
+                                                                            {isAdmin ? (
+                                                                                <select
+                                                                                    value={assignedId || ''}
+                                                                                    onChange={(e) => assignRole(meeting.id, role, e.target.value ? parseInt(e.target.value) : null)}
+                                                                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                                >
+                                                                                    <option value="">-- OPEN --</option>
+                                                                                    {members.map(member => (
+                                                                                        <option key={member.id} value={member.id}>
+                                                                                            {member.name}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            ) : (
+                                                                                <div>
+                                                                                    {assignedMember ? (
+                                                                                        <div className="flex justify-between items-center">
+                                                                                            <span className="text-gray-900 font-medium">{assignedMember.name}</span>
+                                                                                            {isMyRole && (
+                                                                                                <button
+                                                                                                    onClick={() => claimRole(meeting.id, role)}
+                                                                                                    className="text-red-600 hover:text-red-800 text-sm"
+                                                                                                >
+                                                                                                    Remove
+                                                                                                </button>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <button
+                                                                                            onClick={() => claimRole(meeting.id, role)}
+                                                                                            className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                                                                            disabled={!selectedMember}
+                                                                                        >
+                                                                                            Sign Up
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                
